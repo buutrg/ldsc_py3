@@ -128,4 +128,4 @@ Original LDSC:
 - Hilary Finucane (MIT Department of Mathematics)
 
 Python 3 port:
-- Binh Truong
+- Buu Truong
