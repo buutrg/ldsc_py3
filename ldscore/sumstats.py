@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 import itertools as it
-import parse as ps
-import regressions as reg
+from . import parse as ps
+from . import regressions as reg
 import sys
 import traceback
 import copy
