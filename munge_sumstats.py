@@ -624,7 +624,7 @@ if __name__ == '__main__':
     parser.add_argument('--merge-alleles', default=None, type=str,
                         help="Merge alleles with file (useful for sorting out strand issues)")
     parser.add_argument('--n-min', default=None, type=float,
-                        help='Minimum N (sample size). Default: filter out bottom 10% of SNPs.')
+                        help='Minimum N (sample size). Default: filter out bottom 10%% of SNPs.')
     parser.add_argument('--chunksize', default=5e6, type=int,
                         help='Chunksize.')
     
