@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from __future__ import print_function
+# Python 3 already has print function
 import pandas as pd
 import numpy as np
 import argparse
@@ -29,7 +29,7 @@ def make_annot_files(args, bed_for_annot):
     df_annot.fillna(0, inplace=True)
     df_annot = df_annot[['ANNOT']].astype(int)
     if args.annot_file.endswith('.gz'):
-        with gzip.open(args.annot_file, 'wb') as f:
+        with gzip.open(args.annot_file, 'wt') as f:  # Changed 'wb' to 'wt' for Python 3
             df_annot.to_csv(f, sep = "\t", index = False)
     else:
         df_annot.to_csv(args.annot_file, sep="\t", index=False)

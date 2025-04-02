@@ -1,11 +1,8 @@
-
 # LDSC (LD SCore) `v1.0.1`
 
 `ldsc` is a command line tool for estimating heritability and genetic correlation from GWAS summary statistics. `ldsc` also computes LD Scores.
 
 ## Getting Started
-
-
 
 In order to download `ldsc`, you should clone this repository via the commands
 ```  
@@ -19,6 +16,8 @@ In order to install the Python dependencies, you will need the [Anaconda](https:
 conda env create --file environment.yml
 source activate ldsc
 ```
+
+This will create a Python 3 environment with all the necessary dependencies. The software is now compatible with Python 3 (previously Python 2.7 was required).
 
 Once the above has completed, you can run:
 
@@ -59,6 +58,14 @@ In case the Python dependencies have changed, you can update the LDSC environmen
 
 ```
 conda env update --file environment.yml
+```
+
+## Python Version Compatibility
+
+This version of LDSC has been updated to work with Python 3. If you need to use Python 2.7 for compatibility with other tools, you can use the previous version of LDSC by checking out the tag v1.0.0:
+
+```
+git checkout v1.0.0
 ```
 
 ## Where Can I Get LD Scores?

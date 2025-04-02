@@ -5,7 +5,7 @@ This module contains functions for parsing various ldsc-defined file formats.
 
 '''
 
-from __future__ import division
+# from __future__ import division  # Not needed in Python 3
 import numpy as np
 import pandas as pd
 import os
@@ -32,7 +32,7 @@ def sub_chr(s, chrom):
 def get_present_chrs(fh, num):
     '''Checks which chromosomes exist, assuming that the file base will be appended by a dot in any suffix.'''
     chrs = []
-    for chrom in xrange(1,num):
+    for chrom in range(1, num):  # Changed xrange to range
         if glob.glob(sub_chr(fh, chrom) + '.*'):
             chrs.append(chrom)
     return chrs
@@ -159,7 +159,7 @@ def ldscore(fh, num=None):
 
 def M(fh, num=None, N=2, common=False):
     '''Parses .l{N}.M files, split across num chromosomes. See docs/file_formats_ld.txt.'''
-    parsefunc = lambda y: [float(z) for z in open(y, 'r').readline().split()]
+    parsefunc = lambda y: [float(z) for z in open(y, 'r').readline().split()]  # Changed 'rb' to 'r'
     suffix = '.l' + str(N) + '.M'
     if common:
         suffix += '_5_50'
@@ -187,7 +187,7 @@ def annot(fh_list, num=None, frqfile=None):
     annot_suffix = ['.annot' for fh in fh_list]
     annot_compression = []
     if num is not None:  # 22 files, one for each chromosome
-        chrs = get_present_chrs(fh, num+1)
+        chrs = get_present_chrs(fh_list[0], num+1)
         for i, fh in enumerate(fh_list):
             first_fh = sub_chr(fh, chrs[0]) + annot_suffix[i]
             annot_s, annot_comp_single = which_compression(first_fh)

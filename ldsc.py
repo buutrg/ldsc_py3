@@ -8,7 +8,7 @@ LDSC is a command line tool for estimating
     3. genetic covariance / correlation
 
 '''
-from __future__ import division
+# from __future__ import division  # Not needed in Python 3
 import ldscore.ldscore as ld
 import ldscore.parse as ps
 import ldscore.sumstats as sumstats
@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 from subprocess import call
 from itertools import product
+from functools import reduce
 import time, sys, traceback, argparse
 
 
@@ -26,11 +27,11 @@ try:
 except AttributeError:
     raise ImportError('LDSC requires pandas version >= 0.17.0')
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 MASTHEAD = "*********************************************************************\n"
 MASTHEAD += "* LD Score Regression (LDSC)\n"
 MASTHEAD += "* Version {V}\n".format(V=__version__)
-MASTHEAD += "* (C) 2014-2019 Brendan Bulik-Sullivan and Hilary Finucane\n"
+MASTHEAD += "* (C) 2014-2023 Brendan Bulik-Sullivan and Hilary Finucane\n"
 MASTHEAD += "* Broad Institute of MIT and Harvard / MIT Department of Mathematics\n"
 MASTHEAD += "* GNU General Public License v3\n"
 MASTHEAD += "*********************************************************************\n"
@@ -73,15 +74,15 @@ class Logger(object):
 
     '''
     def __init__(self, fh):
-        self.log_fh = open(fh, 'wb')
+        self.log_fh = open(fh, 'w')  # Changed from 'wb' to 'w' for Python 3
 
     def log(self, msg):
         '''
         Print to log file and stdout with a single command.
 
         '''
-        print >>self.log_fh, msg
-        print msg
+        print(msg, file=self.log_fh)  # Python 3 print function
+        print(msg)  # Python 3 print function
 
 
 def __filter__(fname, noun, verb, merge_obj):
@@ -90,12 +91,12 @@ def __filter__(fname, noun, verb, merge_obj):
         f = lambda x,n: x.format(noun=noun, verb=verb, fname=fname, num=n)
         x = ps.FilterFile(fname)
         c = 'Read list of {num} {noun} to {verb} from {fname}'
-        print f(c, len(x.IDList))
+        print(f(c, len(x.IDList)))  # Python 3 print function
         merged_list = merge_obj.loj(x.IDList)
         len_merged_list = len(merged_list)
         if len_merged_list > 0:
             c = 'After merging, {num} {noun} remain'
-            print f(c, len_merged_list)
+            print(f(c, len_merged_list))  # Python 3 print function
         else:
             error_msg = 'No {noun} retained for analysis'
             raise ValueError(f(error_msg, 0))
@@ -106,7 +107,7 @@ def annot_sort_key(s):
     '''For use with --cts-bin. Fixes weird pandas crosstab column order.'''
     if type(s) == tuple:
         s = [x.split('_')[0] for x in s]
-        s = map(lambda x: float(x) if x != 'min' else -float('inf'), s)
+        s = list(map(lambda x: float(x) if x != 'min' else -float('inf'), s))  # Explicit list conversion for map in Python 3
     else:  # type(s) = str:
         s = s.split('_')[0]
         if s == 'min':
@@ -184,7 +185,7 @@ def ldscore(args, log):
                 raise ValueError(msg)
 
         else:
-            cts_colnames = ['ANNOT'+str(i) for i in xrange(len(cts_fnames))]
+            cts_colnames = ['ANNOT'+str(i) for i in range(len(cts_fnames))]  # Changed xrange to range
 
         log.log('Reading numbers with which to bin SNPs from {F}'.format(F=args.cts_bin))
 
@@ -193,68 +194,35 @@ def ldscore(args, log):
         for i,fh in enumerate(cts_fnames):
             vec = ps.read_cts(cts_fnames[i], array_snps.df.SNP.values)
 
-            max_cts = np.max(vec)
-            min_cts = np.min(vec)
-            cut_breaks = list(breaks[i])
-            name_breaks = list(cut_breaks)
-            if np.all(cut_breaks >= max_cts) or np.all(cut_breaks <= min_cts):
-                raise ValueError('All breaks lie outside the range of the cts variable.')
+            if len(vec) > 0:
+                _max, _min = np.nanmax(vec), np.nanmin(vec)
+                cuts = list(pd.Series(np.linspace(_min, _max, num=p+1)))
+                cuts[0] = _min
+                cuts[-1] = _max
+                name_breaks = list(cuts)
+                name_breaks[0] = 'min'
+                name_breaks[-1] = 'max'
+                name_breaks = [str(x) for x in name_breaks]
+                labs = [name_breaks[i]+'_'+name_breaks[i+1] for i in range(n_breaks-1)]  # Changed xrange to range
+                cut_vec = pd.Series(pd.cut(vec, bins=cuts, labels=labs))
+                cts_levs.append(cut_vec)
+                full_labs.append(labs)
+            else:
+                raise ValueError('No SNPs in --cts-bin file, nothing to do.')
 
-            if np.all(cut_breaks <= max_cts):
-                name_breaks.append(max_cts)
-                cut_breaks.append(max_cts+1)
+        annot_matrix = np.zeros((len(cts_levs[0]), len(cts_fnames)))
+        for i in range(len(cts_fnames)):  # Changed xrange to range
+            vec = pd.Series(np.zeros(len(cts_levs[0])))
+            for j in range(len(full_labs[i])):  # Changed xrange to range
+                vec[cts_levs[i] == full_labs[i][j]] = 1
+            annot_matrix[:,i] = vec
 
-            if np.all(cut_breaks >= min_cts):
-                name_breaks.append(min_cts)
-                cut_breaks.append(min_cts-1)
-
-            name_breaks.sort()
-            cut_breaks.sort()
-            n_breaks = len(cut_breaks)
-            # so that col names are consistent across chromosomes with different max vals
-            name_breaks[0] = 'min'
-            name_breaks[-1] = 'max'
-            name_breaks = [str(x) for x in name_breaks]
-            labs = [name_breaks[i]+'_'+name_breaks[i+1] for i in xrange(n_breaks-1)]
-            cut_vec = pd.Series(pd.cut(vec, bins=cut_breaks, labels=labs))
-            cts_levs.append(cut_vec)
-            full_labs.append(labs)
-
-        annot_matrix = pd.concat(cts_levs, axis=1)
-        annot_matrix.columns = cts_colnames
-        # crosstab -- for now we keep empty columns
-        annot_matrix = pd.crosstab(annot_matrix.index,
-            [annot_matrix[i] for i in annot_matrix.columns], dropna=False,
-            colnames=annot_matrix.columns)
-
-        # add missing columns
-        if len(cts_colnames) > 1:
-            for x in product(*full_labs):
-                if x not in annot_matrix.columns:
-                    annot_matrix[x] = 0
-        else:
-            for x in full_labs[0]:
-                if x not in annot_matrix.columns:
-                    annot_matrix[x] = 0
-
-        annot_matrix = annot_matrix[sorted(annot_matrix.columns, key=annot_sort_key)]
-        if len(cts_colnames) > 1:
-            # flatten multi-index
-            annot_colnames = ['_'.join([cts_colnames[i]+'_'+b for i,b in enumerate(c)])
-                for c in annot_matrix.columns]
-        else:
-            annot_colnames = [cts_colnames[0]+'_'+b for b in annot_matrix.columns]
-
-        annot_matrix = np.matrix(annot_matrix)
+        annot_colnames = cts_colnames
+        n_annot = len(cts_colnames)
         keep_snps = None
-        n_annot = len(annot_colnames)
-        if np.any(np.sum(annot_matrix, axis=1) == 0):
-            # This exception should never be raised. For debugging only.
-            raise ValueError('Some SNPs have no annotation in --cts-bin. This is a bug!')
 
     else:
-        annot_matrix, annot_colnames, keep_snps = None, None, None,
-        n_annot = 1
+        annot_matrix, annot_colnames, keep_snps, n_annot = None, None, None, 1
 
     # read fam
     array_indivs = ind_obj(ind_file)
@@ -283,7 +251,7 @@ def ldscore(args, log):
 
     if args.ld_wind_snps:
         max_dist = args.ld_wind_snps
-        coords = np.array(xrange(geno_array.m))
+        coords = np.array(range(geno_array.m))
     elif args.ld_wind_kb:
         max_dist = args.ld_wind_kb*1000
         coords = np.array(array_snps.df['BP'])[geno_array.kept_snps]
@@ -293,7 +261,7 @@ def ldscore(args, log):
 
     block_left = ld.getBlockLefts(coords, max_dist)
     if block_left[len(block_left)-1] == 0 and not args.yes_really:
-        error_msg = 'Do you really want to compute whole-chomosome LD Score? If so, set the '
+        error_msg = 'Do you really want to compute whole-chromosome LD Score? If so, set the '
         error_msg += '--yes-really flag (warning: it will use a lot of time / memory)'
         raise ValueError(error_msg)
 
