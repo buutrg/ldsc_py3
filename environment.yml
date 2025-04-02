@@ -1,4 +1,4 @@
-name: ldsc
+name: ldsc_py3
 channels:
 - bioconda
 - conda-forge
