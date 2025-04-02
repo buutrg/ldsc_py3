@@ -201,11 +201,11 @@ class Test_RG_Statistical():
         args.ref_ld = DIR + '/simulate_test/ldscore/twold_onefile'
         args.w_ld = DIR + '/simulate_test/ldscore/w'
         args.rg = ','.join(
-            (DIR + '/simulate_test/sumstats/' + str(i) for i in xrange(N_REP)))
+            (DIR + '/simulate_test/sumstats/' + str(i) for i in range(N_REP)))
         args.out = DIR + '/simulate_test/1'
         x = s.estimate_rg(args, log)
-        args.intercept_gencov = ','.join(('0' for _ in xrange(N_REP)))
-        args.intercept_h2 = ','.join(('1' for _ in xrange(N_REP)))
+        args.intercept_gencov = ','.join(('0' for _ in range(N_REP)))
+        args.intercept_h2 = ','.join(('1' for _ in range(N_REP)))
         y = s.estimate_rg(args, log)
         cls.rg = x
         cls.rg_noint = y
@@ -286,7 +286,7 @@ class Test_H2_Statistical(unittest.TestCase):
         args.chisq_max = 99999
         h2 = []
         h2_noint = []
-        for i in xrange(N_REP):
+        for i in range(N_REP):
             args.intercept_h2 = None
             args.h2 = DIR + '/simulate_test/sumstats/' + str(i)
             args.out = DIR + '/simulate_test/1'
@@ -409,7 +409,7 @@ class Test_Estimate(unittest.TestCase):
         args.ref_ld = DIR + '/simulate_test/ldscore/oneld_onefile'
         args.w_ld = DIR + '/simulate_test/ldscore/w'
         args.rg = ','.join(
-            [DIR + '/simulate_test/sumstats/1' for _ in xrange(2)])
+            [DIR + '/simulate_test/sumstats/1' for _ in range(2)])
         args.out = DIR + '/simulate_test/1'
         x = s.estimate_rg(args, log)[0]
         args.M = open(
@@ -427,7 +427,7 @@ class Test_Estimate(unittest.TestCase):
         args.ref_ld_chr = DIR + '/simulate_test/ldscore/twold_onefile'
         args.w_ld = DIR + '/simulate_test/ldscore/w'
         args.rg = ','.join(
-            [DIR + '/simulate_test/sumstats/1' for _ in xrange(2)])
+            [DIR + '/simulate_test/sumstats/1' for _ in range(2)])
         args.out = DIR + '/simulate_test/1'
         args.print_cov = True  # right now just check no runtime errors
         args.print_delete_vals = True
@@ -447,7 +447,7 @@ class Test_Estimate(unittest.TestCase):
         args.ref_ld = DIR + '/simulate_test/ldscore/oneld_onefile'
         args.w_ld = DIR + '/simulate_test/ldscore/w'
         args.rg = ','.join(
-            [DIR + '/simulate_test/sumstats/1' for _ in xrange(2)])
+            [DIR + '/simulate_test/sumstats/1' for _ in range(2)])
         args.out = DIR + '/simulate_test/1'
         x = s.estimate_rg(args, log)[0]
         args.no_check_alleles = True
@@ -477,7 +477,7 @@ class Test_Estimate(unittest.TestCase):
         args.ref_ld_chr = DIR + '/simulate_test/ldscore/oneld_onefile'
         args.w_ld = DIR + '/simulate_test/ldscore/w'
         args.rg = ','.join(
-            [DIR + '/simulate_test/sumstats/1' for _ in xrange(2)])
+            [DIR + '/simulate_test/sumstats/1' for _ in range(2)])
         args.out = DIR + '/simulate_test/rg'
         args.two_step = 999
         x = s.estimate_rg(args, log)[0]

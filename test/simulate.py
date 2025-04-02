@@ -35,7 +35,7 @@ M_two = np.sum(two_ldsc, axis=0)
 M = np.sum(single_ldsc)
 ld = pd.DataFrame({
     'CHR': np.ones(N_SNP),
-    'SNP': ['rs' + str(i) for i in xrange(1000)],
+    'SNP': ['rs' + str(i) for i in range(1000)],
     'BP': np.arange(N_SNP)})
 
 # 2 LD Scores 2 files
@@ -64,12 +64,12 @@ w_ld.to_csv('simulate_test/ldscore/w.l2.ldscore',
             index=False, sep='\t', float_format='%.3f')
 # split across chromosomes
 df = pd.DataFrame({
-    'SNP': ['rs' + str(i) for i in xrange(1000)],
-    'A1': ['A' for _ in xrange(1000)],
-    'A2': ['G' for _ in xrange(1000)],
+    'SNP': ['rs' + str(i) for i in range(1000)],
+    'A1': ['A' for _ in range(1000)],
+    'A2': ['G' for _ in range(1000)],
     'N': np.ones(1000) * N_INDIV
 })
-for i in xrange(N_SIMS):
+for i in range(N_SIMS):
     z = np.random.normal(size=N_SNP).reshape((N_SNP,))
     c = np.sqrt(
         1 + N_INDIV * (h21 * two_ldsc[:, 0] / float(M_two[0]) + h22 * two_ldsc[:, 1] / float(M_two[1])))
