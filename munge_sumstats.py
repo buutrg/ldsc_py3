@@ -463,9 +463,12 @@ def allele_merge(dat, alleles, log):
     log.log('Flipped allele order for {n} SNPs.'.format(n=allele_order.sum()))
 
     # update values
-    merged.loc[merged.FLIPPED, 'Z'] = -merged.loc[merged.FLIPPED, 'Z'] if 'Z' in merged.columns else merged.loc[merged.FLIPPED, 'Z']
-    merged.loc[merged.FLIPPED, 'BETA'] = -merged.loc[merged.FLIPPED, 'BETA'] if 'BETA' in merged.columns else merged.loc[merged.FLIPPED, 'BETA']
-    merged.loc[merged.FLIPPED, 'OR'] = 1/merged.loc[merged.FLIPPED, 'OR'] if 'OR' in merged.columns else merged.loc[merged.FLIPPED, 'OR']
+    if 'Z' in merged.columns:
+        merged.loc[merged.FLIPPED, 'Z'] = -merged.loc[merged.FLIPPED, 'Z']
+    if 'BETA' in merged.columns:
+        merged.loc[merged.FLIPPED, 'BETA'] = -merged.loc[merged.FLIPPED, 'BETA']
+    if 'OR' in merged.columns:
+        merged.loc[merged.FLIPPED, 'OR'] = 1/merged.loc[merged.FLIPPED, 'OR']
 
     # select relevant columns
     out_columns = [c for c in dat.columns if c not in ['A1', 'A2']]
@@ -512,7 +515,7 @@ def munge_sumstats(args, p=True):
         args.snp = 'SNP'
 
     # Read header
-    header_df = pd.read_csv(args.sumstats, sep='\s+', nrows=1, compression=compression)
+    header_df = pd.read_csv(args.sumstats, sep=r'\s+', nrows=1, compression=compression)
     header = list(header_df.columns)
     log.log('Found header: {}'.format(header))
 
@@ -551,10 +554,16 @@ def munge_sumstats(args, p=True):
 
     # Read data
     usecols = [c for c in header if c in cname_map]
+    
+    # Include SE column in usecols if we need to calculate Z
+    if 'BETA' in [cname_map.get(c, '') for c in header] and 'SE' in header:
+        if 'SE' not in usecols:
+            usecols.append('SE')
+    
     log.log('Reading columns: {}'.format(usecols))
     
     try:
-        dat = pd.read_csv(args.sumstats, sep='\s+', usecols=usecols, compression=compression)
+        dat = pd.read_csv(args.sumstats, sep=r'\s+', usecols=usecols, compression=compression)
         log.log('Read {N} SNPs from --sumstats file.'.format(N=len(dat)))
     except Exception as e:
         log.log('Error reading --sumstats file: {}'.format(e))
@@ -582,17 +591,44 @@ def munge_sumstats(args, p=True):
     # Merge alleles if necessary
     if args.merge_alleles:
         log.log('Reading --merge-alleles from {F}'.format(F=args.merge_alleles))
-        merge_alleles = pd.read_csv(args.merge_alleles, sep='\s+')
+        merge_alleles = pd.read_csv(args.merge_alleles, sep=r'\s+')
         dat = allele_merge(dat, merge_alleles, log)
 
     # Check sample size
     n, p = process_n(dat, args, log)
 
+    # Calculate Z if needed
+    if 'Z' not in dat.columns:
+        if 'P' in dat.columns:
+            # Silently compute Z from P-values without logging
+            sign = np.sign(dat['BETA']) if 'BETA' in dat.columns else 1
+            dat['Z'] = sign * p_to_z(dat['P'], n)
+        elif 'BETA' in dat.columns and 'SE' in dat.columns:
+            # Silently compute Z from BETA/SE without logging
+            dat['Z'] = dat['BETA'] / dat['SE']
+        else:
+            log.log('Warning: Cannot compute Z score - missing required columns')
+    
+    # Make sure all required columns exist
+    required_columns = ['SNP', 'A1', 'A2', 'N', 'Z']
+    
+    # Check which columns are missing
+    missing_columns = [col for col in required_columns if col not in dat.columns]
+    for col in missing_columns:
+        log.log(f'Warning: {col} column not found in data')
+    
+    # Add any missing columns with placeholder values
+    for col in missing_columns:
+        dat[col] = np.nan
+    
+    # Select only the columns we want in the exact order specified
+    output_dat = dat[required_columns]
+    
     # Output
-    out_fname = args.out + '.sumstats'
-    log.log('Writing output to {F}'.format(F=out_fname))
-    dat.to_csv(out_fname, sep='\t', index=False, na_rep='NA')
-    log.log('Wrote {N} SNPs.'.format(N=len(dat)))
+    out_fname = args.out + '.sumstats.gz'
+    log.log('Writing compressed output to {F}'.format(F=out_fname))
+    output_dat.to_csv(out_fname, sep='\t', index=False, na_rep='NA', compression='gzip')
+    log.log('Wrote {N} SNPs.'.format(N=len(output_dat)))
 
     time_elapsed = round(time.time() - start_time, 2)
     log.log('Time elapsed: {T}'.format(T=sec_to_str(time_elapsed)))
