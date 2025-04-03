@@ -307,7 +307,7 @@ def ldscore(args, log):
                         F=args.print_snps, N=len(print_snps)))
 
         print_snps.columns=['SNP']
-        df = df.ix[df.SNP.isin(print_snps.SNP),:]
+        df = df.loc[df.SNP.isin(print_snps.SNP),:]
         if len(df) == 0:
             raise ValueError('After merging with --print-snps, no SNPs remain.')
         else:
@@ -351,19 +351,19 @@ def ldscore(args, log):
     # print LD Score summary
     pd.set_option('display.max_rows', 200)
     log.log('\nSummary of LD Scores in {F}'.format(F=out_fname+l2_suffix))
-    t = df.ix[:,4:].describe()
-    log.log( t.ix[1:,:] )
+    t = df.iloc[:,4:].describe()
+    log.log( t.iloc[1:,:] )
 
     np.seterr(divide='ignore', invalid='ignore')  # print NaN instead of weird errors
     # print correlation matrix including all LD Scores and sample MAF
     log.log('')
     log.log('MAF/LD Score Correlation Matrix')
-    log.log( df.ix[:,4:].corr() )
+    log.log( df.iloc[:,4:].corr() )
 
     # print condition number
     if n_annot > 1: # condition number of a column vector w/ nonzero var is trivially one
         log.log('\nLD Score Matrix Condition Number')
-        cond_num = np.linalg.cond(df.ix[:,5:])
+        cond_num = np.linalg.cond(df.iloc[:,5:])
         log.log( reg.remove_brackets(str(np.matrix(cond_num))) )
         if cond_num > 10000:
             log.log('WARNING: ill-conditioned LD Score Matrix!')
@@ -443,11 +443,11 @@ parser.add_argument('--cts-names', default=None, type=str,
     '--cts-bin DAF,DIST_TO_GENE ')
 parser.add_argument('--per-allele', default=False, action='store_true',
     help='Setting this flag causes LDSC to compute per-allele LD Scores, '
-    'i.e., \ell_j := \sum_k p_k(1-p_k)r^2_{jk}, where p_k denotes the MAF '
+    'i.e., \\ell_j := \\sum_k p_k(1-p_k)r^2_{jk}, where p_k denotes the MAF '
     'of SNP j. ')
 parser.add_argument('--pq-exp', default=None, type=float,
     help='Setting this flag causes LDSC to compute LD Scores with the given scale factor, '
-    'i.e., \ell_j := \sum_k (p_k(1-p_k))^a r^2_{jk}, where p_k denotes the MAF '
+    'i.e., \\ell_j := \\sum_k (p_k(1-p_k))^a r^2_{jk}, where p_k denotes the MAF '
     'of SNP j and a is the argument to --pq-exp. ')
 parser.add_argument('--no-print-annot', default=False, action='store_true',
     help='By defualt, seting --cts-bin or --cts-bin-add causes LDSC to print '
